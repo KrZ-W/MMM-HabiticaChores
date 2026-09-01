@@ -17,6 +17,9 @@ checklist. Turn the mirror into a "chores on the wall" board.
 
 - **Dailies due today** (`isDue` and not completed) + **open to-dos**, per person.
 - **Multiple users** — each family member with their own User ID + API token.
+- **Optional stat line** (`showStats`) — class · level · ❤ HP · ⭐ XP · 🪙 gold, plus
+  today's completion (`✓ 2/4`), all localizable and computed with Habitica's own
+  formulas (no extra library). Requests are staggered to respect the rate limit.
 - **Checklist progress** badge (e.g. `1/2`) for tasks with sub-items.
 - **Read-only & safe** — never modifies your tasks; the mirror just reflects
   Habitica, refreshing on a timer.
@@ -67,12 +70,16 @@ out of any public place (including GitHub); it belongs only in your local
 | `hideCompleted` | bool | `true` | Hide chores already completed. |
 | `maxPerUser` | int | `0` | Cap items shown per person (`0` = no cap). |
 | `panel` | bool | `false` | Draw a translucent card behind the list. |
+| `showStats` | bool | `false` | Show a per-user stat line (class/level/HP/XP/gold + today's completion). |
 | `demo` | bool | `false` | Render canned sample chores (no account). |
 | `showUserHeader` | bool | `true` | Show each person's name as a header. |
 | `updateInterval` | int | `900000` | Refresh interval, ms (default 15 min). |
 | `dailiesLabel` | string | `"Tâches du jour"` | Label for the dailies section. |
 | `todosLabel` | string | `"À faire"` | Label for the to-dos section. |
 | `emptyText` | string | `"Tout est fait 🎉"` | Shown when a person has nothing left. |
+
+A `users[]` entry may set `stats: false` to skip the stat line for that account
+(handy for a shared "household" bucket where level/XP is meaningless).
 
 ## Two pages on one mirror
 

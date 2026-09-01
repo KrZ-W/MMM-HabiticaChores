@@ -45,4 +45,14 @@ function splitChores(tasks, options = {}) {
   return { dailies, todos };
 }
 
-module.exports = { splitChores, mapTask };
+/** Per-person completion totals for a "house status" summary. */
+function summarize(tasks) {
+  const dueDailies = tasks.filter((t) => t.type === "daily" && t.isDue !== false);
+  return {
+    dailiesDue: dueDailies.length,
+    dailiesDone: dueDailies.filter((t) => t.completed).length,
+    todosOpen: tasks.filter((t) => t.type === "todo" && !t.completed).length
+  };
+}
+
+module.exports = { splitChores, mapTask, summarize };

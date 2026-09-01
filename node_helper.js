@@ -7,7 +7,7 @@
  * Third-party tools are asked to send an x-client header ("<userId>-<appName>").
  */
 const NodeHelper = require("node_helper");
-const { splitChores } = require("./chores");
+const { splitChores, summarize } = require("./chores");
 
 const API_BASE = "https://habitica.com/api/v3";
 
@@ -43,6 +43,7 @@ const DEMO_USERS = [
 
 module.exports = NodeHelper.create({
   start() {
+    this.reqGap = 500; // ms between Habitica requests, to stay under the rate limit
     console.log(`[${this.name}] helper started`);
   },
 
@@ -52,7 +53,11 @@ module.exports = NodeHelper.create({
     }
   },
 
-  // payload = { identifier, users: [{name, userId, apiToken}], options }
+  sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+  },
+
+  // payload = { identifier, users: [{name, userId, apiToken, stats?}], options }
   async fetchAll(payload) {
     const { identifier, users = [], options = {} } = payload;
 
@@ -62,16 +67,55 @@ module.exports = NodeHelper.create({
     }
 
     const results = [];
-    for (const user of users) {
+    for (let i = 0; i < users.length; i++) {
+      const user = users[i];
+      if (i > 0) await this.sleep(this.reqGap); // stagger requests (Habitica rate limit)
+      const entry = { name: user.name || "Habitica", error: null, dailies: [], todos: [], stats: null };
       try {
         const tasks = await this.fetchUserTasks(user);
-        results.push({ name: user.name || "Habitica", error: null, ...splitChores(tasks, options) });
+        Object.assign(entry, splitChores(tasks, options));
+        entry.summary = summarize(tasks);
+        if (options.showStats && user.stats !== false) {
+          await this.sleep(this.reqGap);
+          entry.stats = await this.fetchUserStats(user);
+        }
       } catch (err) {
         console.error(`[${this.name}] fetch failed for ${user.name}: ${err.message}`);
-        results.push({ name: user.name || "Habitica", error: err.message, dailies: [], todos: [] });
+        entry.error = err.message;
       }
+      results.push(entry);
     }
     this.sendSocketNotification("HABITICA_TASKS", { identifier, users: results });
+  },
+
+  async fetchUserStats(user) {
+    const res = await fetch(`${API_BASE}/user?userFields=stats`, {
+      headers: {
+        "x-api-user": user.userId,
+        "x-api-key": user.apiToken,
+        "x-client": `${user.userId}-MMM-HabiticaChores`,
+        "content-type": "application/json"
+      }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} (stats)`);
+    const json = await res.json();
+    const s = json && json.data && json.data.stats;
+    if (!s) return null;
+    return {
+      class: s.class,
+      lvl: s.lvl,
+      hp: Math.round(s.hp),
+      maxHealth: 50, // Habitica HP cap is a constant
+      exp: Math.round(s.exp),
+      toNextLevel: this.tnl(s.lvl), // API omits it; derive from Habitica's formula
+      gp: Math.round(s.gp)
+    };
+  },
+
+  // XP required to reach the next level (Habitica common formula)
+  tnl(level) {
+    if (!level || level < 1) return 0;
+    return Math.round(((Math.pow(level, 2) * 0.25) + (10 * level) + 139.75) / 10) * 10;
   },
 
   async fetchUserTasks(user) {

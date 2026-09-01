@@ -8,6 +8,7 @@ Module.register("MMM-HabiticaChores", {
     users: [],                    // [{ name, userId, apiToken }]
     demo: false,                  // true = render canned sample chores (no account needed)
     panel: false,                 // true = draw a translucent card behind the list (readable over photos)
+    showStats: false,             // true = show a compact stat line (class/level/HP/MP/XP + today's completion) per user
     showDailies: true,
     showTodos: true,
     onlyDueToday: true,           // dailies: only those scheduled for today
@@ -33,32 +34,23 @@ Module.register("MMM-HabiticaChores", {
     this.scheduleFetch(this.config.initialLoadDelay);
   },
 
+  sendFetch() {
+    this.sendSocketNotification("HABITICA_FETCH", {
+      identifier: this.identifier,
+      users: this.config.users,
+      options: {
+        demo: this.config.demo,
+        showStats: this.config.showStats,
+        onlyDueToday: this.config.onlyDueToday,
+        hideCompleted: this.config.hideCompleted
+      }
+    });
+  },
+
   scheduleFetch(delay) {
-    const self = this;
-    setTimeout(function fetchLoop() {
-      self.sendSocketNotification("HABITICA_FETCH", {
-        identifier: self.identifier,
-        users: self.config.users,
-        options: {
-          demo: self.config.demo,
-          onlyDueToday: self.config.onlyDueToday,
-          hideCompleted: self.config.hideCompleted
-        }
-      });
-    }, delay);
-    // recurring
+    setTimeout(() => this.sendFetch(), delay); // initial
     clearInterval(this.fetchTimer);
-    this.fetchTimer = setInterval(() => {
-      this.sendSocketNotification("HABITICA_FETCH", {
-        identifier: this.identifier,
-        users: this.config.users,
-        options: {
-          demo: this.config.demo,
-          onlyDueToday: this.config.onlyDueToday,
-          hideCompleted: this.config.hideCompleted
-        }
-      });
-    }, this.config.updateInterval);
+    this.fetchTimer = setInterval(() => this.sendFetch(), this.config.updateInterval); // recurring
   },
 
   socketNotificationReceived(notification, payload) {
@@ -66,6 +58,33 @@ Module.register("MMM-HabiticaChores", {
     this.usersData = payload.users;
     this.loaded = true;
     this.updateDom(this.config.fade ? 500 : 0);
+  },
+
+  buildStatLine(user) {
+    const s = user.stats || {};
+    const line = document.createElement("div");
+    line.className = "hc-stats xsmall";
+
+    const classFr = { warrior: "Guerrier", wizard: "Mage", healer: "Soigneur", rogue: "Voleur" }[s.class] || "";
+    if (s.lvl != null || classFr) {
+      const cls = document.createElement("span");
+      cls.className = "hc-stat-class";
+      cls.textContent = (classFr ? classFr + " · " : "") + (s.lvl != null ? "Niv " + s.lvl : "");
+      line.appendChild(cls);
+    }
+    const add = (kind, txt) => {
+      const e = document.createElement("span");
+      e.className = "hc-stat " + kind;
+      e.textContent = txt;
+      line.appendChild(e);
+    };
+    if (s.hp != null) add("hc-hp", `❤ ${s.hp}/${s.maxHealth}`);
+    if (s.exp != null && s.toNextLevel) add("hc-xp", `⭐ ${s.exp}/${s.toNextLevel}`);
+    if (s.gp != null) add("hc-gold", `🪙 ${s.gp}`);
+    if (user.summary && user.summary.dailiesDue > 0) {
+      add("hc-progress", `✓ ${user.summary.dailiesDone}/${user.summary.dailiesDue}`);
+    }
+    return line;
   },
 
   getDom() {
@@ -101,6 +120,10 @@ Module.register("MMM-HabiticaChores", {
         block.appendChild(e);
         wrapper.appendChild(block);
         return;
+      }
+
+      if (this.config.showStats && (user.stats || user.summary)) {
+        block.appendChild(this.buildStatLine(user));
       }
 
       const sections = [];
