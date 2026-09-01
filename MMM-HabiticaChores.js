@@ -140,8 +140,82 @@ Module.register("MMM-HabiticaChores", {
     return wrapper;
   },
 
+  buildBar(icon, cur, max, kind) {
+    const row = document.createElement("div");
+    row.className = "hstat-bar-row";
+    const ic = document.createElement("span");
+    ic.className = "hstat-ic " + kind;
+    ic.textContent = icon;
+    const track = document.createElement("div");
+    track.className = "hstat-track";
+    const fill = document.createElement("div");
+    fill.className = "hstat-fill " + kind;
+    const pct = max > 0 ? Math.max(0, Math.min(100, Math.round((cur / max) * 100))) : 0;
+    fill.style.width = pct + "%";
+    track.appendChild(fill);
+    const val = document.createElement("div");
+    val.className = "hstat-val";
+    val.textContent = `${cur}/${max}`;
+    row.appendChild(ic);
+    row.appendChild(track);
+    row.appendChild(val);
+    return row;
+  },
+
+  // Full per-player stat cards (mode: "stats"): big avatar + HP/XP bars + gold.
+  buildStats() {
+    const wrapper = document.createElement("div");
+    wrapper.className = "habitica-stats" + (this.config.panel ? " hc-panel" : "");
+    if (!this.loaded) {
+      wrapper.className += " dimmed small";
+      wrapper.textContent = "…";
+      return wrapper;
+    }
+    const classFr = { warrior: "Guerrier", wizard: "Mage", healer: "Soigneur", rogue: "Voleur" };
+    this.usersData.forEach((user) => {
+      if (!user.stats) return; // skip accounts without stats (e.g. the shared bucket)
+      const s = user.stats;
+      const card = document.createElement("div");
+      card.className = "hstat-card";
+      if (user.avatar && user.avatar.length) card.appendChild(this.buildAvatar(user.avatar));
+
+      const info = document.createElement("div");
+      info.className = "hstat-info";
+      const name = document.createElement("div");
+      name.className = "hstat-name";
+      name.textContent = user.name;
+      info.appendChild(name);
+      const sub = document.createElement("div");
+      sub.className = "hstat-sub";
+      sub.textContent = (classFr[s.class] || "") + " · Niveau " + (s.lvl != null ? s.lvl : "?");
+      info.appendChild(sub);
+
+      info.appendChild(this.buildBar("❤", s.hp, s.maxHealth, "hp"));
+      if (s.toNextLevel) info.appendChild(this.buildBar("⭐", s.exp, s.toNextLevel, "xp"));
+
+      const foot = document.createElement("div");
+      foot.className = "hstat-foot";
+      const gold = document.createElement("span");
+      gold.className = "hstat-gold";
+      gold.textContent = "🪙 " + s.gp;
+      foot.appendChild(gold);
+      if (user.summary && user.summary.dailiesDue > 0) {
+        const c = document.createElement("span");
+        const done = user.summary.dailiesDone, due = user.summary.dailiesDue;
+        c.className = "hstat-done" + (done >= due ? " done" : "");
+        c.textContent = `✓ ${done}/${due} aujourd'hui`;
+        foot.appendChild(c);
+      }
+      info.appendChild(foot);
+      card.appendChild(info);
+      wrapper.appendChild(card);
+    });
+    return wrapper;
+  },
+
   getDom() {
     if (this.config.mode === "summary") return this.buildSummary();
+    if (this.config.mode === "stats") return this.buildStats();
 
     const wrapper = document.createElement("div");
     wrapper.className = "habitica-chores" + (this.config.panel ? " hc-panel" : "");

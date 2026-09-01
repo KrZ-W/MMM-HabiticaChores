@@ -146,6 +146,77 @@
 .habitica-summary .hs-count.done { color: #a5d6a7; }
 .habitica-summary .hs-count.muted { color: rgba(255, 255, 255, 0.4); }
 
+/* --- Full stat cards (mode: "stats") --- */
+.habitica-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px 18px;
+}
+.habitica-stats.hc-panel {
+  display: inline-flex;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 14px;
+  padding: 18px 22px;
+  backdrop-filter: blur(2px);
+}
+.habitica-stats .hstat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 430px;
+}
+.habitica-stats .hc-avatar {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 auto;
+}
+.habitica-stats .hstat-info { flex: 1 1 auto; min-width: 0; }
+.habitica-stats .hstat-name {
+  font-size: 20px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-text-bright, #fff);
+}
+.habitica-stats .hstat-sub {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 7px;
+}
+.habitica-stats .hstat-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+.habitica-stats .hstat-ic { width: 18px; text-align: center; font-size: 14px; }
+.habitica-stats .hstat-track {
+  flex: 1 1 auto;
+  height: 11px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+.habitica-stats .hstat-fill { height: 100%; border-radius: 6px; }
+.habitica-stats .hstat-fill.hp { background: #ff5252; }
+.habitica-stats .hstat-fill.xp { background: #ffd54f; }
+.habitica-stats .hstat-val {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  min-width: 58px;
+  text-align: right;
+}
+.habitica-stats .hstat-foot {
+  display: flex;
+  gap: 18px;
+  margin-top: 7px;
+  font-size: 15px;
+}
+.habitica-stats .hstat-gold { color: #ffd700; }
+.habitica-stats .hstat-done { color: #ffcc66; }
+.habitica-stats .hstat-done.done { color: #a5d6a7; }
+
 .habitica-chores .hc-error {
   color: #ff8a80;
 }

@@ -20,10 +20,11 @@ checklist. Turn the mirror into a "chores on the wall" board.
 - **Optional stat line** (`showStats`) — class · level · ❤ HP · ⭐ XP · 🪙 gold, plus
   today's completion (`✓ 2/4`), all localizable and computed with Habitica's own
   formulas (no extra library). Requests are staggered to respect the rate limit.
-- **Two view modes** (`mode`): a detailed `list` (chores per person) or a compact
-  horizontal `summary` — each person's **composited Habitica avatar sprite** +
-  today's completion (`2/4`). Pair them on a multi-page mirror (glance on the
-  home page, detail on another).
+- **Three view modes** (`mode`): a detailed `list` (chores per person); a compact
+  horizontal `summary` (each person's **composited Habitica avatar sprite** +
+  today's completion `2/4`); and `stats` (per-player cards — big avatar, HP/XP
+  bars, gold, completion). Pair them across a multi-page mirror (glance on the
+  home page, detail + full stats on others).
 - **Checklist progress** badge (e.g. `1/2`) for tasks with sub-items.
 - **Shared node_helper cache** — multiple instances (summary + detail) trigger
   one set of API calls, not several.
@@ -70,7 +71,7 @@ out of any public place (including GitHub); it belongs only in your local
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `users` | array | `[]` | `{ name, userId, apiToken }` per person. |
-| `mode` | string | `"list"` | `"list"` (detailed chores) or `"summary"` (avatar + completion strip). |
+| `mode` | string | `"list"` | `"list"` (detailed chores), `"summary"` (avatar + completion strip), or `"stats"` (per-player stat cards). |
 | `showDailies` | bool | `true` | Show the "dailies due today" section. |
 | `showTodos` | bool | `true` | Show the "to-dos" section. |
 | `onlyDueToday` | bool | `true` | Dailies: only those scheduled for today. |
