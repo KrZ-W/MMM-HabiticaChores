@@ -167,6 +167,17 @@
 .habitica-summary .hs-count.done { color: #a5d6a7; }
 .habitica-summary .hs-count.muted { color: rgba(255, 255, 255, 0.4); }
 
+/* 🏠 house / group chores */
+.habitica-chores .hc-house .hc-user-name { color: #ffd54f; }
+.habitica-chores .hc-turn { color: rgba(255, 255, 255, 0.55); }
+.habitica-summary .hs-house .hs-house-icon {
+  width: 64px;
+  height: 64px;
+  line-height: 64px;
+  font-size: 42px;
+  text-align: center;
+}
+
 /* --- Full stat cards (mode: "stats") --- */
 .habitica-stats {
   display: flex;

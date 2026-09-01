@@ -7,6 +7,7 @@ Module.register("MMM-HabiticaChores", {
   defaults: {
     users: [],                    // [{ name, userId, apiToken }]
     apiBase: "",                  // override API base for a self-hosted instance (e.g. "http://host:3000/api/v3"); blank = habitica.com
+    group: null,                  // { name, id, userId, apiToken } → render a group's shared chores as a 🏠 section
     mode: "list",                 // "list" = detailed chores; "summary" = compact avatar + count strip; "stats" = stat cards
     columns: 1,                   // list mode: >1 lays out person cards in a grid instead of one stack
     showDifficulty: false,        // list mode: show per-task difficulty pips (reward level)
@@ -49,6 +50,7 @@ Module.register("MMM-HabiticaChores", {
         apiBase: this.config.apiBase,
         cacheSeconds: this.config.cacheSeconds,
         reqGapMs: this.config.reqGapMs,
+        group: this.config.group,
         showStats: this.config.showStats,
         onlyDueToday: this.config.onlyDueToday,
         hideCompleted: this.config.hideCompleted
@@ -65,6 +67,7 @@ Module.register("MMM-HabiticaChores", {
   socketNotificationReceived(notification, payload) {
     if (notification !== "HABITICA_TASKS" || payload.identifier !== this.identifier) return;
     this.usersData = payload.users;
+    this.houseData = payload.house || null;
     this.loaded = true;
     this.updateDom(this.config.fade ? 500 : 0);
   },
@@ -163,7 +166,67 @@ Module.register("MMM-HabiticaChores", {
       cell.appendChild(count);
       wrapper.appendChild(cell);
     });
+    if (this.houseData && this.houseData.chores && this.houseData.chores.length) {
+      const cell = document.createElement("div");
+      cell.className = "hs-cell hs-house";
+      const icon = document.createElement("div");
+      icon.className = "hs-house-icon";
+      icon.textContent = "🏠";
+      cell.appendChild(icon);
+      const name = document.createElement("div");
+      name.className = "hs-name";
+      name.textContent = this.houseData.name || "Maison";
+      cell.appendChild(name);
+      const done = this.houseData.chores.filter((c) => c.assigned.length > 0 && c.assigned.every((a) => a.done)).length;
+      const count = document.createElement("div");
+      count.className = "hs-count" + (done >= this.houseData.chores.length ? " done" : "");
+      count.textContent = `${done}/${this.houseData.chores.length}`;
+      cell.appendChild(count);
+      wrapper.appendChild(cell);
+    }
     return wrapper;
+  },
+
+  // 🏠 house/group chores section (list mode): chore + whose turn + done.
+  buildHouse() {
+    const h = this.houseData;
+    const block = document.createElement("div");
+    block.className = "hc-user hc-house";
+    const name = document.createElement("div");
+    name.className = "hc-user-name";
+    name.textContent = "🏠 " + (h.name || "Maison");
+    block.appendChild(name);
+    if (h.error) {
+      const e = document.createElement("div");
+      e.className = "hc-error small dimmed";
+      e.textContent = "⚠ " + h.error;
+      block.appendChild(e);
+      return block;
+    }
+    const list = document.createElement("ul");
+    list.className = "hc-list";
+    h.chores.forEach((c) => {
+      const li = document.createElement("li");
+      const allDone = c.assigned.length > 0 && c.assigned.every((a) => a.done);
+      li.className = "hc-item" + (allDone ? " done" : "");
+      const box = document.createElement("span");
+      box.className = "hc-check";
+      box.textContent = allDone ? "☑" : "☐";
+      li.appendChild(box);
+      const label = document.createElement("span");
+      label.className = "hc-text";
+      label.textContent = c.text;
+      if (c.assigned.length) {
+        const turn = document.createElement("span");
+        turn.className = "hc-turn xsmall";
+        turn.textContent = " → " + c.assigned.map((a) => a.name + (a.done ? " ✓" : "")).join(", ");
+        label.appendChild(turn);
+      }
+      li.appendChild(label);
+      list.appendChild(li);
+    });
+    block.appendChild(list);
+    return block;
   },
 
   buildBar(icon, cur, max, kind) {
@@ -349,6 +412,9 @@ Module.register("MMM-HabiticaChores", {
       wrapper.appendChild(block);
     });
 
+    if (this.houseData && ((this.houseData.chores && this.houseData.chores.length) || this.houseData.error)) {
+      wrapper.appendChild(this.buildHouse());
+    }
     return wrapper;
   }
 });

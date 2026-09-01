@@ -83,7 +83,38 @@ module.exports = NodeHelper.create({
       }
       results.push(entry);
     }
-    this.sendSocketNotification("HABITICA_TASKS", { identifier, users: results });
+    let house = null;
+    if (options.group && options.group.id && options.group.apiToken) {
+      try {
+        house = await this.fetchGroup(options.group, options, users);
+      } catch (err) {
+        console.error(`[${this.name}] group fetch failed: ${err.message}`);
+        house = { name: options.group.name || "Maison", error: err.message, chores: [] };
+      }
+    }
+    this.sendSocketNotification("HABITICA_TASKS", { identifier, users: results, house });
+  },
+
+  // Fetch a group's shared chores + who's assigned + who's done (group tasks
+  // live on the group, not in members' personal lists).
+  async fetchGroup(group, options, users) {
+    const res = await fetch(`${this.apiBase}/tasks/group/${group.id}`, {
+      headers: this.authHeaders({ userId: group.userId, apiToken: group.apiToken })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} (group)`);
+    const tasks = (await res.json()).data || [];
+    const nameOf = (uid) => { const u = users.find((x) => x.userId === uid); return u ? u.name : "?"; };
+    const onlyDue = options.onlyDueToday !== false;
+    const chores = tasks
+      .filter((t) => t.type === "daily")
+      .filter((t) => (onlyDue ? t.isDue !== false : true))
+      .map((t) => {
+        const g = t.group || {};
+        const detail = g.assignedUsersDetail || {};
+        const assigned = (g.assignedUsers || []).map((uid) => ({ name: nameOf(uid), done: !!(detail[uid] && detail[uid].completed) }));
+        return { text: (t.text || "").trim(), priority: t.priority, assigned };
+      });
+    return { name: group.name || "Maison", chores };
   },
 
   // Cached, de-duplicated per-user fetch.
