@@ -10,7 +10,7 @@
 const NodeHelper = require("node_helper");
 const { splitChores, summarize } = require("./chores");
 
-const API_BASE = "https://habitica.com/api/v3";
+const DEFAULT_API_BASE = "https://habitica.com/api/v3";
 const CDN = "https://habitica-assets.s3.amazonaws.com/mobileApp/images/";
 
 // Canned data for `demo: true` — preview without an account (no stats/avatar).
@@ -59,6 +59,7 @@ module.exports = NodeHelper.create({
   // payload = { identifier, users: [{name, userId, apiToken, stats?}], options }
   async fetchAll(payload) {
     const { identifier, users = [], options = {} } = payload;
+    this.apiBase = (options.apiBase || DEFAULT_API_BASE).replace(/\/+$/, ""); // cloud or self-hosted
 
     if (options.demo) {
       this.sendSocketNotification("HABITICA_TASKS", { identifier, users: DEMO_USERS });
@@ -114,7 +115,7 @@ module.exports = NodeHelper.create({
   },
 
   async fetchUserTasks(user) {
-    const res = await fetch(`${API_BASE}/tasks/user`, { headers: this.authHeaders(user) });
+    const res = await fetch(`${this.apiBase}/tasks/user`, { headers: this.authHeaders(user) });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       throw new Error(`HTTP ${res.status} ${res.statusText}${body ? " — " + body.slice(0, 120) : ""}`);
@@ -127,7 +128,7 @@ module.exports = NodeHelper.create({
   },
 
   async fetchUserInfo(user) {
-    const res = await fetch(`${API_BASE}/user?userFields=stats,preferences,items.gear.equipped`, {
+    const res = await fetch(`${this.apiBase}/user?userFields=stats,preferences,items.gear.equipped`, {
       headers: this.authHeaders(user)
     });
     if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} (user)`);

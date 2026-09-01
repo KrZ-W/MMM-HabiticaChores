@@ -6,6 +6,7 @@
 Module.register("MMM-HabiticaChores", {
   defaults: {
     users: [],                    // [{ name, userId, apiToken }]
+    apiBase: "",                  // override API base for a self-hosted instance (e.g. "http://host:3000/api/v3"); blank = habitica.com
     mode: "list",                 // "list" = detailed chores; "summary" = compact avatar + count strip; "stats" = stat cards
     columns: 1,                   // list mode: >1 lays out person cards in a grid instead of one stack
     showDifficulty: false,        // list mode: show per-task difficulty pips (reward level)
@@ -43,6 +44,7 @@ Module.register("MMM-HabiticaChores", {
       users: this.config.users,
       options: {
         demo: this.config.demo,
+        apiBase: this.config.apiBase,
         showStats: this.config.showStats,
         onlyDueToday: this.config.onlyDueToday,
         hideCompleted: this.config.hideCompleted

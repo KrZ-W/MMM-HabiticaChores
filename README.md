@@ -71,6 +71,7 @@ out of any public place (including GitHub); it belongs only in your local
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `users` | array | `[]` | `{ name, userId, apiToken }` per person. |
+| `apiBase` | string | `""` | Point at a **self-hosted** Habitica (e.g. `"http://host:3000/api/v3"`). Blank = `habitica.com`. |
 | `mode` | string | `"list"` | `"list"` (detailed chores), `"summary"` (avatar + completion strip), or `"stats"` (per-player stat cards). |
 | `columns` | int | `1` | List mode: `>1` lays out person cards in a grid instead of one stack. |
 | `showDifficulty` | bool | `false` | List mode: show per-task difficulty pips (◆ = reward level: easy/medium/hard). |
