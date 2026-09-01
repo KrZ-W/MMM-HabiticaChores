@@ -6,6 +6,7 @@
 Module.register("MMM-HabiticaChores", {
   defaults: {
     users: [],                    // [{ name, userId, apiToken }]
+    mode: "list",                 // "list" = detailed chores; "summary" = compact avatar + count strip
     demo: false,                  // true = render canned sample chores (no account needed)
     panel: false,                 // true = draw a translucent card behind the list (readable over photos)
     showStats: false,             // true = show a compact stat line (class/level/HP/MP/XP + today's completion) per user
@@ -87,7 +88,61 @@ Module.register("MMM-HabiticaChores", {
     return line;
   },
 
+  buildAvatar(layers) {
+    const box = document.createElement("div");
+    box.className = "hc-avatar";
+    (layers || []).forEach((url) => {
+      const img = document.createElement("img");
+      img.className = "hc-layer";
+      img.src = url;
+      img.onerror = function () { this.style.display = "none"; }; // hide layers with no image
+      box.appendChild(img);
+    });
+    return box;
+  },
+
+  // Compact horizontal strip: avatar + name + today's completion, per person.
+  buildSummary() {
+    const wrapper = document.createElement("div");
+    wrapper.className = "habitica-summary" + (this.config.panel ? " hc-panel" : "");
+    if (!this.loaded) {
+      wrapper.className += " dimmed small";
+      wrapper.textContent = "…";
+      return wrapper;
+    }
+    this.usersData.forEach((user) => {
+      const cell = document.createElement("div");
+      cell.className = "hs-cell";
+
+      if (user.avatar && user.avatar.length) cell.appendChild(this.buildAvatar(user.avatar));
+
+      const name = document.createElement("div");
+      name.className = "hs-name";
+      name.textContent = user.name;
+      cell.appendChild(name);
+
+      const count = document.createElement("div");
+      count.className = "hs-count";
+      if (user.error) {
+        count.className += " muted";
+        count.textContent = "⚠";
+      } else if (user.summary && user.summary.dailiesDue > 0) {
+        const { dailiesDone: done, dailiesDue: due } = user.summary;
+        if (done >= due) count.className += " done";
+        count.textContent = `${done}/${due}`;
+      } else {
+        count.className += " muted";
+        count.textContent = "—";
+      }
+      cell.appendChild(count);
+      wrapper.appendChild(cell);
+    });
+    return wrapper;
+  },
+
   getDom() {
+    if (this.config.mode === "summary") return this.buildSummary();
+
     const wrapper = document.createElement("div");
     wrapper.className = "habitica-chores" + (this.config.panel ? " hc-panel" : "");
 
