@@ -177,7 +177,7 @@ Module.register("MMM-HabiticaChores", {
       name.className = "hs-name";
       name.textContent = this.houseData.name || "Maison";
       cell.appendChild(name);
-      const done = this.houseData.chores.filter((c) => c.assigned.length > 0 && c.assigned.every((a) => a.done)).length;
+      const done = this.houseData.chores.filter((c) => c.assigned.some((a) => a.done)).length;
       const count = document.createElement("div");
       count.className = "hs-count" + (done >= this.houseData.chores.length ? " done" : "");
       count.textContent = `${done}/${this.houseData.chores.length}`;
@@ -207,20 +207,21 @@ Module.register("MMM-HabiticaChores", {
     list.className = "hc-list";
     h.chores.forEach((c) => {
       const li = document.createElement("li");
-      const allDone = c.assigned.length > 0 && c.assigned.every((a) => a.done);
-      li.className = "hc-item" + (allDone ? " done" : "");
+      const doneBy = c.assigned.filter((a) => a.done).map((a) => a.name);
+      const done = doneBy.length > 0; // open chore: done as soon as anyone does it
+      li.className = "hc-item" + (done ? " done" : "");
       const box = document.createElement("span");
       box.className = "hc-check";
-      box.textContent = allDone ? "☑" : "☐";
+      box.textContent = done ? "☑" : "☐";
       li.appendChild(box);
       const label = document.createElement("span");
       label.className = "hc-text";
       label.textContent = c.text;
-      if (c.assigned.length) {
-        const turn = document.createElement("span");
-        turn.className = "hc-turn xsmall";
-        turn.textContent = " → " + c.assigned.map((a) => a.name + (a.done ? " ✓" : "")).join(", ");
-        label.appendChild(turn);
+      if (done) {
+        const by = document.createElement("span");
+        by.className = "hc-turn xsmall";
+        by.textContent = " ✓ " + doneBy.join(", ");
+        label.appendChild(by);
       }
       li.appendChild(label);
       list.appendChild(li);

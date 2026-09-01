@@ -72,7 +72,7 @@ out of any public place (including GitHub); it belongs only in your local
 |---|---|---|---|
 | `users` | array | `[]` | `{ name, userId, apiToken }` per person. |
 | `apiBase` | string | `""` | Point at a **self-hosted** Habitica (e.g. `"http://host:3000/api/v3"`). Blank = `habitica.com`. |
-| `group` | object | `null` | `{ name, id, userId, apiToken }` → render a party's **group/shared chores** as a 🏠 section (chore + whose turn + done). Needs a Group Plan (free when self-hosted). |
+| `group` | object | `null` | `{ name, id, userId, apiToken }` → render a party's **group/shared chores** as a 🏠 section (open chore, marked done ✓ by whoever completes it). Needs a Group Plan (free when self-hosted). |
 | `mode` | string | `"list"` | `"list"` (detailed chores), `"summary"` (avatar + completion strip), or `"stats"` (per-player stat cards). |
 | `columns` | int | `1` | List mode: `>1` lays out person cards in a grid instead of one stack. |
 | `showDifficulty` | bool | `false` | List mode: show per-task difficulty pips (◆ = reward level: easy/medium/hard). |
