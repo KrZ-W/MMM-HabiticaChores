@@ -85,6 +85,8 @@ out of any public place (including GitHub); it belongs only in your local
 | `demo` | bool | `false` | Render canned sample chores (no account). |
 | `showUserHeader` | bool | `true` | Show each person's name as a header. |
 | `updateInterval` | int | `900000` | Refresh interval, ms (default 15 min). |
+| `cacheSeconds` | int | `240` | node_helper cache TTL. Lower = more "live" (safe on self-host; keep high on cloud for the rate limit). |
+| `reqGapMs` | int | `500` | Delay between API requests. Lower for self-host (no rate limit). |
 | `dailiesLabel` | string | `"Tâches du jour"` | Label for the dailies section. |
 | `todosLabel` | string | `"À faire"` | Label for the to-dos section. |
 | `emptyText` | string | `"Tout est fait 🎉"` | Shown when a person has nothing left. |

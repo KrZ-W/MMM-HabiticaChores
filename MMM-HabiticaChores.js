@@ -19,6 +19,8 @@ Module.register("MMM-HabiticaChores", {
     hideCompleted: true,          // hide chores already done
     maxPerUser: 0,                // 0 = no cap
     updateInterval: 15 * 60 * 1000,
+    cacheSeconds: 240,            // node_helper cache TTL; lower = more "live" (fine on self-host, no rate limit)
+    reqGapMs: 500,                // ms between API requests; lower for self-host
     initialLoadDelay: 1500,
     showUserHeader: true,         // show each person's name
     dailiesLabel: "Tâches du jour",
@@ -45,6 +47,8 @@ Module.register("MMM-HabiticaChores", {
       options: {
         demo: this.config.demo,
         apiBase: this.config.apiBase,
+        cacheSeconds: this.config.cacheSeconds,
+        reqGapMs: this.config.reqGapMs,
         showStats: this.config.showStats,
         onlyDueToday: this.config.onlyDueToday,
         hideCompleted: this.config.hideCompleted

@@ -60,6 +60,8 @@ module.exports = NodeHelper.create({
   async fetchAll(payload) {
     const { identifier, users = [], options = {} } = payload;
     this.apiBase = (options.apiBase || DEFAULT_API_BASE).replace(/\/+$/, ""); // cloud or self-hosted
+    this.reqGap = options.reqGapMs != null ? options.reqGapMs : 500;          // stagger; lower for self-host
+    this.cacheTTL = (options.cacheSeconds != null ? options.cacheSeconds : 240) * 1000; // short = more live
 
     if (options.demo) {
       this.sendSocketNotification("HABITICA_TASKS", { identifier, users: DEMO_USERS });
