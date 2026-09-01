@@ -6,7 +6,9 @@
 Module.register("MMM-HabiticaChores", {
   defaults: {
     users: [],                    // [{ name, userId, apiToken }]
-    mode: "list",                 // "list" = detailed chores; "summary" = compact avatar + count strip
+    mode: "list",                 // "list" = detailed chores; "summary" = compact avatar + count strip; "stats" = stat cards
+    columns: 1,                   // list mode: >1 lays out person cards in a grid instead of one stack
+    showDifficulty: false,        // list mode: show per-task difficulty pips (reward level)
     demo: false,                  // true = render canned sample chores (no account needed)
     panel: false,                 // true = draw a translucent card behind the list (readable over photos)
     showStats: false,             // true = show a compact stat line (class/level/HP/MP/XP + today's completion) per user
@@ -82,10 +84,28 @@ Module.register("MMM-HabiticaChores", {
     if (s.hp != null) add("hc-hp", `❤ ${s.hp}/${s.maxHealth}`);
     if (s.exp != null && s.toNextLevel) add("hc-xp", `⭐ ${s.exp}/${s.toNextLevel}`);
     if (s.gp != null) add("hc-gold", `🪙 ${s.gp}`);
-    if (user.summary && user.summary.dailiesDue > 0) {
-      add("hc-progress", `✓ ${user.summary.dailiesDone}/${user.summary.dailiesDue}`);
-    }
     return line;
+  },
+
+  // Difficulty pips (reward level): trivial/easy = 1, medium = 2, hard = 3.
+  difficultyPips(priority) {
+    const count = { 0.1: 1, 1: 1, 1.5: 2, 2: 3 }[priority] || 1;
+    const label = { 0.1: "Triviale", 1: "Facile", 1.5: "Moyenne", 2: "Difficile" }[priority] || "";
+    const el = document.createElement("span");
+    el.className = "hc-diff d" + String(priority).replace(".", "_");
+    el.title = label;
+    el.textContent = "◆".repeat(count);
+    return el;
+  },
+
+  // Small "done/due" progress line, always shown in list mode.
+  progressLine(user) {
+    const el = document.createElement("div");
+    el.className = "hc-progress-line xsmall";
+    const done = user.summary.dailiesDone, due = user.summary.dailiesDue;
+    el.textContent = `✓ ${done}/${due}`;
+    if (done >= due) el.classList.add("done");
+    return el;
   },
 
   buildAvatar(layers) {
@@ -218,7 +238,8 @@ Module.register("MMM-HabiticaChores", {
     if (this.config.mode === "stats") return this.buildStats();
 
     const wrapper = document.createElement("div");
-    wrapper.className = "habitica-chores" + (this.config.panel ? " hc-panel" : "");
+    wrapper.className = "habitica-chores" + (this.config.panel ? " hc-panel" : "") +
+      (this.config.columns > 1 ? " hc-grid" : "");
 
     if (!this.config.demo && (!this.config.users || this.config.users.length === 0)) {
       wrapper.innerHTML = "MMM-HabiticaChores: aucun utilisateur configuré";
@@ -251,8 +272,11 @@ Module.register("MMM-HabiticaChores", {
         return;
       }
 
-      if (this.config.showStats && (user.stats || user.summary)) {
+      if (this.config.showStats && user.stats) {
         block.appendChild(this.buildStatLine(user));
+      }
+      if (user.summary && user.summary.dailiesDue > 0) {
+        block.appendChild(this.progressLine(user));
       }
 
       const sections = [];
@@ -299,6 +323,9 @@ Module.register("MMM-HabiticaChores", {
             badge.className = "hc-checklist xsmall dimmed";
             badge.textContent = ` ${doneCount}/${item.checklist.length}`;
             label.appendChild(badge);
+          }
+          if (this.config.showDifficulty && item.priority != null) {
+            label.appendChild(this.difficultyPips(item.priority));
           }
           li.appendChild(label);
           list.appendChild(li);

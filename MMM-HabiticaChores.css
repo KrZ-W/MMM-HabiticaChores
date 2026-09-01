@@ -89,7 +89,28 @@
 .habitica-chores .hc-hp { color: #ff8a80; }
 .habitica-chores .hc-xp { color: #ffd54f; }
 .habitica-chores .hc-gold { color: #ffd700; }
-.habitica-chores .hc-progress { color: #a5d6a7; }
+
+/* "done/due" progress line (list mode) */
+.habitica-chores .hc-progress-line { color: #ffcc66; margin: 1px 0 4px; }
+.habitica-chores .hc-progress-line.done { color: #a5d6a7; }
+
+/* per-task difficulty pips (reward level) */
+.habitica-chores .hc-diff { margin-left: 6px; letter-spacing: 1px; font-size: 11px; }
+.habitica-chores .hc-diff.d0_1 { color: rgba(255, 255, 255, 0.35); }
+.habitica-chores .hc-diff.d1 { color: #a5d6a7; }
+.habitica-chores .hc-diff.d1_5 { color: #ffcc66; }
+.habitica-chores .hc-diff.d2 { color: #ff8a80; }
+
+/* list mode: 2-column card grid (columns > 1) */
+.habitica-chores.hc-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 30px;
+  max-width: 940px;
+  align-items: flex-start;
+}
+.habitica-chores.hc-panel.hc-grid { display: inline-flex; }
+.habitica-chores.hc-grid .hc-user { width: 430px; }
 
 .habitica-chores .hc-empty {
   font-style: italic;

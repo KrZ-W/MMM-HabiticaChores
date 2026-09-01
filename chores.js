@@ -9,6 +9,7 @@ function mapTask(t) {
     text: (t.text || "").trim(),
     completed: !!t.completed,
     isDue: t.isDue !== false, // Habitica omits/true when due; explicit false when not
+    priority: t.priority,     // difficulty: 0.1 trivial, 1 easy, 1.5 medium, 2 hard
     date: t.date || null,
     checklist: Array.isArray(t.checklist)
       ? t.checklist.map((c) => ({ text: c.text, completed: !!c.completed }))

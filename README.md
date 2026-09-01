@@ -72,6 +72,8 @@ out of any public place (including GitHub); it belongs only in your local
 |---|---|---|---|
 | `users` | array | `[]` | `{ name, userId, apiToken }` per person. |
 | `mode` | string | `"list"` | `"list"` (detailed chores), `"summary"` (avatar + completion strip), or `"stats"` (per-player stat cards). |
+| `columns` | int | `1` | List mode: `>1` lays out person cards in a grid instead of one stack. |
+| `showDifficulty` | bool | `false` | List mode: show per-task difficulty pips (◆ = reward level: easy/medium/hard). |
 | `showDailies` | bool | `true` | Show the "dailies due today" section. |
 | `showTodos` | bool | `true` | Show the "to-dos" section. |
 | `onlyDueToday` | bool | `true` | Dailies: only those scheduled for today. |
@@ -118,6 +120,14 @@ HABITICA_USER=<userId> HABITICA_TOKEN=<apiToken> node test-api.js
 
 Prints the task counts and the outstanding dailies / to-dos the module would
 show. Run the parsing unit test with `npm test`.
+
+## Tip: pictograms for pre-readers
+
+Habitica has no per-task icon field, but you can put an emoji at the **start of
+the task name** in Habitica itself (e.g. `🪥 Brosser ses dents`). It then shows
+both on the mirror *and* in the Habitica app where kids check chores off — handy
+for children who can't read yet. Install a color-emoji font on the display
+(`fonts-noto-color-emoji`) so they render.
 
 ## How a "chore" is defined
 
