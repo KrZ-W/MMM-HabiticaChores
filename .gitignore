@@ -1,0 +1,8 @@
+node_modules/
+*.log
+npm-debug.log*
+.DS_Store
+# never commit local credentials
+.env
+*.local.js
+secrets*

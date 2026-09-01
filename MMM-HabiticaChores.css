@@ -1,0 +1,87 @@
+/* MMM-HabiticaChores */
+
+.habitica-chores {
+  text-align: left;
+  line-height: 1.35;
+}
+
+/* Opt-in translucent card so text stays readable over a photo background */
+.habitica-chores.hc-panel {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 14px;
+  padding: 16px 26px 18px;
+  backdrop-filter: blur(2px);
+}
+
+/* Slightly brighter section labels than MM's default .dimmed so they read on photos */
+.habitica-chores .hc-section-label {
+  color: rgba(255, 255, 255, 0.55);
+}
+.habitica-chores .hc-empty,
+.habitica-chores .hc-checklist {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.habitica-chores .hc-user {
+  margin-bottom: 14px;
+}
+
+.habitica-chores .hc-user-name {
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 16px;
+  letter-spacing: 1px;
+  color: var(--color-text-bright, #fff);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 2px;
+  margin-bottom: 5px;
+}
+
+.habitica-chores .hc-section-label {
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.habitica-chores .hc-list {
+  list-style: none;
+  margin: 2px 0 0 0;
+  padding: 0;
+}
+
+.habitica-chores .hc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 3px 0;
+}
+
+.habitica-chores .hc-check {
+  flex: 0 0 auto;
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--color-text-bright, #fff);
+}
+
+.habitica-chores .hc-text {
+  flex: 1 1 auto;
+  color: var(--color-text, #ddd);
+}
+
+.habitica-chores .hc-item.done .hc-text {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.habitica-chores .hc-checklist {
+  opacity: 0.7;
+}
+
+.habitica-chores .hc-empty {
+  font-style: italic;
+}
+
+.habitica-chores .hc-error {
+  color: #ff8a80;
+}

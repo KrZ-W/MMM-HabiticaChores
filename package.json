@@ -1,0 +1,33 @@
+{
+  "name": "mmm-habiticachores",
+  "version": "1.0.0",
+  "description": "MagicMirror² module that shows outstanding Habitica chores (due dailies + open to-dos) for one or more family members as a glanceable checklist.",
+  "main": "MMM-HabiticaChores.js",
+  "scripts": {
+    "test": "node test-split.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KrZ-W/MMM-HabiticaChores.git"
+  },
+  "keywords": [
+    "MagicMirror",
+    "MagicMirror2",
+    "magicmirror-module",
+    "habitica",
+    "chores",
+    "tasks",
+    "dailies",
+    "todos",
+    "family"
+  ],
+  "author": "KrZ-W",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/KrZ-W/MMM-HabiticaChores/issues"
+  },
+  "homepage": "https://github.com/KrZ-W/MMM-HabiticaChores#readme",
+  "engines": {
+    "node": ">=18"
+  }
+}
