@@ -9,7 +9,7 @@ Module.register("MMM-HabiticaChores", {
     apiBase: "",                  // override API base for a self-hosted instance (e.g. "http://host:3000/api/v3"); blank = habitica.com
     group: null,                  // { name, id, userId, apiToken } → render a group's shared chores as a 🏠 section
     redemptionsUrl: "",           // URL returning {redemptions:[{name,icon,label,cost,at}]} → show recently redeemed rewards
-    redemptionsHours: 24,         // how far back to show them
+    redemptionsHours: 24,         // how far back to show them (0 = no limit; use with a pending-only URL)
     redemptionsInline: false,     // list mode: append them inside the chores panel instead of using a separate instance
     hideWhenEmpty: true,          // redemptions mode: render nothing when there is nothing to show
     noRedemptionsText: "Aucune récompense échangée",
@@ -272,8 +272,11 @@ Module.register("MMM-HabiticaChores", {
   buildRedemptions() {
     const all = this.redemptions;
     if (!all || !all.length) return null;
-    const cut = Date.now() - (this.config.redemptionsHours || 24) * 3600e3;
-    const list = all.filter((r) => Date.parse(r.at) >= cut);
+    // redemptionsHours: 0 = no time limit (keep showing until handled upstream)
+    const hours = this.config.redemptionsHours;
+    const list = hours > 0
+      ? all.filter((r) => Date.parse(r.at) >= Date.now() - hours * 3600e3)
+      : all;
     if (!list.length) return null;
 
     const block = document.createElement("div");
