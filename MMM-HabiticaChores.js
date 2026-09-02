@@ -166,7 +166,7 @@ Module.register("MMM-HabiticaChores", {
       cell.appendChild(count);
       wrapper.appendChild(cell);
     });
-    if (this.houseData && this.houseData.chores && this.houseData.chores.length) {
+    if (this.houseData && ((this.houseData.chores && this.houseData.chores.length) || this.houseData.error)) {
       const cell = document.createElement("div");
       cell.className = "hs-cell hs-house";
       const icon = document.createElement("div");
@@ -177,10 +177,16 @@ Module.register("MMM-HabiticaChores", {
       name.className = "hs-name";
       name.textContent = this.houseData.name || "Maison";
       cell.appendChild(name);
-      const done = this.houseData.chores.filter((c) => c.assigned.some((a) => a.done)).length;
       const count = document.createElement("div");
-      count.className = "hs-count" + (done >= this.houseData.chores.length ? " done" : "");
-      count.textContent = `${done}/${this.houseData.chores.length}`;
+      if (this.houseData.error) {
+        count.className = "hs-count muted";
+        count.textContent = "⚠";
+      } else {
+        const chores = this.houseData.chores;
+        const done = chores.filter((c) => c.done).length;
+        count.className = "hs-count" + (done >= chores.length ? " done" : "");
+        count.textContent = `${done}/${chores.length}`;
+      }
       cell.appendChild(count);
       wrapper.appendChild(cell);
     }
@@ -208,7 +214,7 @@ Module.register("MMM-HabiticaChores", {
     h.chores.forEach((c) => {
       const li = document.createElement("li");
       const doneBy = c.assigned.filter((a) => a.done).map((a) => a.name);
-      const done = doneBy.length > 0; // open chore: done as soon as anyone does it
+      const done = c.done; // open chore: done as soon as anyone does it
       li.className = "hc-item" + (done ? " done" : "");
       const box = document.createElement("span");
       box.className = "hc-check";
@@ -217,7 +223,7 @@ Module.register("MMM-HabiticaChores", {
       const label = document.createElement("span");
       label.className = "hc-text";
       label.textContent = c.text;
-      if (done) {
+      if (done && doneBy.length) {
         const by = document.createElement("span");
         by.className = "hc-turn xsmall";
         by.textContent = " ✓ " + doneBy.join(", ");
@@ -263,10 +269,27 @@ Module.register("MMM-HabiticaChores", {
     }
     const classFr = { warrior: "Guerrier", wizard: "Mage", healer: "Soigneur", rogue: "Voleur" };
     this.usersData.forEach((user) => {
-      if (!user.stats) return; // skip accounts without stats (e.g. the shared bucket)
+      if (user.error) { // don't let a failing account silently disappear
+        const bad = document.createElement("div");
+        bad.className = "hstat-card hstat-error";
+        const info = document.createElement("div");
+        info.className = "hstat-info";
+        const nm = document.createElement("div");
+        nm.className = "hstat-name";
+        nm.textContent = user.name;
+        const msg = document.createElement("div");
+        msg.className = "hc-error small dimmed";
+        msg.textContent = "⚠ " + user.error;
+        info.appendChild(nm);
+        info.appendChild(msg);
+        bad.appendChild(info);
+        wrapper.appendChild(bad);
+        return;
+      }
+      if (!user.stats) return; // accounts with stats disabled (e.g. a shared bucket)
       const s = user.stats;
       const card = document.createElement("div");
-      card.className = "hstat-card";
+      card.className = "hstat-card" + (user.stale ? " hc-stale" : "");
       if (user.avatar && user.avatar.length) card.appendChild(this.buildAvatar(user.avatar));
 
       const info = document.createElement("div");
@@ -324,7 +347,7 @@ Module.register("MMM-HabiticaChores", {
 
     this.usersData.forEach((user) => {
       const block = document.createElement("div");
-      block.className = "hc-user";
+      block.className = "hc-user" + (user.stale ? " hc-stale" : "");
 
       if (this.config.showUserHeader) {
         const h = document.createElement("div");

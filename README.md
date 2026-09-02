@@ -26,10 +26,17 @@ checklist. Turn the mirror into a "chores on the wall" board.
   bars, gold, completion). Pair them across a multi-page mirror (glance on the
   home page, detail + full stats on others).
 - **Checklist progress** badge (e.g. `1/2`) for tasks with sub-items.
-- **Shared node_helper cache** — multiple instances (summary + detail) trigger
-  one set of API calls, not several.
+- **Shared node_helper cache** — multiple instances (summary + detail + stats)
+  trigger one set of API calls, not several. Cache entries are keyed by API base
+  and de-duplicated while in flight.
+- **Fails soft** — if a refresh fails (network blip, server restart), the last
+  known chores stay on screen (dimmed) instead of blanking the board.
 - **Read-only & safe** — never modifies your tasks; the mirror just reflects
-  Habitica, refreshing on a timer.
+  Habitica, refreshing on a timer. (As with any authenticated Habitica client,
+  a fetch after a user's day rollover triggers their server-side cron — i.e.
+  the day rolls over on first contact.)
+- **Keep your MagicMirror port on the LAN**: API tokens live in `config.js` and
+  are handed to the module's helper, as with any credentialed MM module.
 - **Demo mode** — preview the layout with canned data, no account required.
 - **Optional panel** — a translucent card so text stays readable over a photo
   background.

@@ -167,6 +167,9 @@
 .habitica-summary .hs-count.done { color: #a5d6a7; }
 .habitica-summary .hs-count.muted { color: rgba(255, 255, 255, 0.4); }
 
+/* served from cache after a failed refresh — slightly dimmed */
+.hc-stale { opacity: 0.75; }
+
 /* 🏠 house / group chores */
 .habitica-chores .hc-house .hc-user-name { color: #ffd54f; }
 .habitica-chores .hc-turn { color: rgba(255, 255, 255, 0.55); }

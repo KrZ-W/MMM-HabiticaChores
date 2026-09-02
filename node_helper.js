@@ -12,6 +12,8 @@ const { splitChores, summarize } = require("./chores");
 
 const DEFAULT_API_BASE = "https://habitica.com/api/v3";
 const CDN = "https://habitica-assets.s3.amazonaws.com/mobileApp/images/";
+// Habitica asks third-party tools for a constant "{maintainer-userId}-{appName}".
+const X_CLIENT = "MMM-HabiticaChores";
 
 // Canned data for `demo: true` — preview without an account (no stats/avatar).
 const DEMO_USERS = [
@@ -41,10 +43,8 @@ const DEMO_USERS = [
 
 module.exports = NodeHelper.create({
   start() {
-    this.reqGap = 500;              // ms between Habitica requests (rate limit)
-    this.cacheTTL = 5 * 60 * 1000; // per-user result cache
-    this.cache = {};               // userId -> { ts, rawTasks, stats, avatar }
-    this.inflight = {};            // userId -> Promise (dedupe concurrent fetches)
+    this.cache = {};    // "<apiBase>:<key>" -> { ts, ... }
+    this.inflight = {}; // same key -> Promise (dedupe concurrent fetches)
     console.log(`[${this.name}] helper started`);
   },
 
@@ -53,40 +53,72 @@ module.exports = NodeHelper.create({
   },
 
   socketNotificationReceived(notification, payload) {
-    if (notification === "HABITICA_FETCH") this.fetchAll(payload);
+    if (notification !== "HABITICA_FETCH") return;
+    // Never let a bad config or an unexpected shape reject unhandled: an
+    // unhandled rejection would take down the whole MagicMirror process.
+    Promise.resolve()
+      .then(() => this.fetchAll(payload))
+      .catch((err) => {
+        console.error(`[${this.name}] fetch cycle failed: ${err.message}`);
+        this.sendSocketNotification("HABITICA_TASKS", {
+          identifier: payload && payload.identifier,
+          users: [],
+          house: { name: "", error: err.message, chores: [] }
+        });
+      });
+  },
+
+  // Per-cycle settings, resolved from this instance's options (never stored on
+  // `this` — several module instances share one helper and would race).
+  settings(options) {
+    return {
+      apiBase: String(options.apiBase || DEFAULT_API_BASE).replace(/\/+$/, ""),
+      reqGap: options.reqGapMs != null ? options.reqGapMs : 500,
+      cacheTTL: (options.cacheSeconds != null ? options.cacheSeconds : 240) * 1000
+    };
   },
 
   // payload = { identifier, users: [{name, userId, apiToken, stats?}], options }
   async fetchAll(payload) {
-    const { identifier, users = [], options = {} } = payload;
-    this.apiBase = (options.apiBase || DEFAULT_API_BASE).replace(/\/+$/, ""); // cloud or self-hosted
-    this.reqGap = options.reqGapMs != null ? options.reqGapMs : 500;          // stagger; lower for self-host
-    this.cacheTTL = (options.cacheSeconds != null ? options.cacheSeconds : 240) * 1000; // short = more live
+    const { identifier, options = {} } = payload || {};
+    const users = Array.isArray(payload && payload.users) ? payload.users : [];
 
     if (options.demo) {
       this.sendSocketNotification("HABITICA_TASKS", { identifier, users: DEMO_USERS });
       return;
     }
+    const cfg = this.settings(options);
 
     const results = [];
     for (const user of users) {
-      const entry = { name: user.name || "Habitica", error: null, dailies: [], todos: [], summary: null, stats: null, avatar: null };
+      const entry = { name: user.name || "Habitica", error: null, stale: false, dailies: [], todos: [], summary: null, stats: null, avatar: null };
       try {
-        const b = await this.getBundle(user);
+        const b = await this.getBundle(user, cfg);
         Object.assign(entry, splitChores(b.rawTasks, options));
         entry.summary = summarize(b.rawTasks);
         entry.avatar = b.avatar;
         if (user.stats !== false) entry.stats = b.stats;
       } catch (err) {
         console.error(`[${this.name}] fetch failed for ${user.name}: ${err.message}`);
-        entry.error = err.message;
+        // Prefer showing slightly stale chores over blanking the board.
+        const stale = this.cache[`${cfg.apiBase}:u:${user.userId}`];
+        if (stale) {
+          Object.assign(entry, splitChores(stale.rawTasks, options));
+          entry.summary = summarize(stale.rawTasks);
+          entry.avatar = stale.avatar;
+          if (user.stats !== false) entry.stats = stale.stats;
+          entry.stale = true;
+        } else {
+          entry.error = err.message;
+        }
       }
       results.push(entry);
     }
+
     let house = null;
     if (options.group && options.group.id && options.group.apiToken) {
       try {
-        house = await this.fetchGroup(options.group, options, users);
+        house = await this.getGroup(options.group, options, users, cfg);
       } catch (err) {
         console.error(`[${this.name}] group fetch failed: ${err.message}`);
         house = { name: options.group.name || "Maison", error: err.message, chores: [] };
@@ -97,13 +129,13 @@ module.exports = NodeHelper.create({
 
   // Fetch a group's shared chores + who's assigned + who's done (group tasks
   // live on the group, not in members' personal lists).
-  async fetchGroup(group, options, users) {
-    const res = await fetch(`${this.apiBase}/tasks/group/${group.id}`, {
+  async fetchGroup(group, options, users, cfg) {
+    const res = await fetch(`${cfg.apiBase}/tasks/group/${group.id}`, {
       headers: this.authHeaders({ userId: group.userId, apiToken: group.apiToken })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} (group)`);
     const tasks = (await res.json()).data || [];
-    const nameOf = (uid) => { const u = users.find((x) => x.userId === uid); return u ? u.name : "?"; };
+    const nameOf = (uid) => { const u = users.find((x) => x.userId === uid); return u ? u.name : null; };
     const onlyDue = options.onlyDueToday !== false;
     const chores = tasks
       .filter((t) => t.type === "daily")
@@ -111,44 +143,56 @@ module.exports = NodeHelper.create({
       .map((t) => {
         const g = t.group || {};
         const detail = g.assignedUsersDetail || {};
-        const assigned = (g.assignedUsers || []).map((uid) => ({ name: nameOf(uid), done: !!(detail[uid] && detail[uid].completed) }));
-        return { text: (t.text || "").trim(), priority: t.priority, assigned };
+        const assigned = (g.assignedUsers || [])
+          .map((uid) => ({ name: nameOf(uid), done: !!(detail[uid] && detail[uid].completed) }))
+          .filter((a) => a.name); // drop members not listed in `users`
+        // Unassigned group chores fall back to the task's own completed flag.
+        const done = assigned.length ? assigned.some((a) => a.done) : !!t.completed;
+        return { text: (t.text || "").trim(), priority: t.priority, assigned, done };
       });
     return { name: group.name || "Maison", chores };
   },
 
-  // Cached, de-duplicated per-user fetch.
-  getBundle(user) {
-    const now = Date.now();
-    const cached = this.cache[user.userId];
-    if (cached && now - cached.ts < this.cacheTTL) return Promise.resolve(cached);
-    if (this.inflight[user.userId]) return this.inflight[user.userId];
+  // Generic cache + in-flight dedupe. Keyed by apiBase so instances pointed at
+  // different servers can never share an entry.
+  cached(key, cfg, producer) {
+    const k = `${cfg.apiBase}:${key}`;
+    const hit = this.cache[k];
+    if (hit && Date.now() - hit.ts < cfg.cacheTTL) return Promise.resolve(hit);
+    if (this.inflight[k]) return this.inflight[k];
 
-    const p = this._fetchBundle(user)
-      .then((b) => { this.cache[user.userId] = b; delete this.inflight[user.userId]; return b; })
-      .catch((e) => { delete this.inflight[user.userId]; throw e; });
-    this.inflight[user.userId] = p;
+    const p = producer()
+      .then((v) => { const e = { ...v, ts: Date.now() }; this.cache[k] = e; delete this.inflight[k]; return e; })
+      .catch((e) => { delete this.inflight[k]; throw e; });
+    this.inflight[k] = p;
     return p;
   },
 
-  async _fetchBundle(user) {
-    const rawTasks = await this.fetchUserTasks(user);
-    await this.sleep(this.reqGap);
-    const info = await this.fetchUserInfo(user);
-    return { ts: Date.now(), rawTasks, stats: info.stats, avatar: info.avatar };
+  getBundle(user, cfg) {
+    return this.cached(`u:${user.userId}`, cfg, () => this._fetchBundle(user, cfg));
+  },
+
+  getGroup(group, options, users, cfg) {
+    return this.cached(`g:${group.id}`, cfg, () => this.fetchGroup(group, options, users, cfg));
+  },
+
+  async _fetchBundle(user, cfg) {
+    const rawTasks = await this.fetchUserTasks(user, cfg);
+    await this.sleep(cfg.reqGap);
+    const info = await this.fetchUserInfo(user, cfg);
+    return { rawTasks, stats: info.stats, avatar: info.avatar };
   },
 
   authHeaders(user) {
     return {
       "x-api-user": user.userId,
       "x-api-key": user.apiToken,
-      "x-client": `${user.userId}-MMM-HabiticaChores`,
-      "content-type": "application/json"
+      "x-client": X_CLIENT
     };
   },
 
-  async fetchUserTasks(user) {
-    const res = await fetch(`${this.apiBase}/tasks/user`, { headers: this.authHeaders(user) });
+  async fetchUserTasks(user, cfg) {
+    const res = await fetch(`${cfg.apiBase}/tasks/user`, { headers: this.authHeaders(user) });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       throw new Error(`HTTP ${res.status} ${res.statusText}${body ? " — " + body.slice(0, 120) : ""}`);
@@ -160,18 +204,19 @@ module.exports = NodeHelper.create({
     return json.data;
   },
 
-  async fetchUserInfo(user) {
-    const res = await fetch(`${this.apiBase}/user?userFields=stats,preferences,items.gear.equipped`, {
+  async fetchUserInfo(user, cfg) {
+    const res = await fetch(`${cfg.apiBase}/user?userFields=stats,preferences,items.gear.equipped`, {
       headers: this.authHeaders(user)
     });
     if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} (user)`);
     const d = (await res.json()).data || {};
     const s = d.stats || {};
+    const num = (v) => (Number.isFinite(v) ? Math.round(v) : null); // never render NaN
     const stats = {
       class: s.class, lvl: s.lvl,
-      hp: Math.round(s.hp), maxHealth: 50,
-      exp: Math.round(s.exp), toNextLevel: this.tnl(s.lvl),
-      gp: Math.round(s.gp)
+      hp: num(s.hp), maxHealth: 50,
+      exp: num(s.exp), toNextLevel: this.tnl(s.lvl),
+      gp: num(s.gp)
     };
     const equipped = (d.items && d.items.gear && d.items.gear.equipped) || {};
     const avatar = this.buildAvatarLayers(d.preferences || {}, equipped);
