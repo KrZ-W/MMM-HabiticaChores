@@ -255,3 +255,8 @@
 .habitica-chores .hc-error {
   color: #ff8a80;
 }
+
+/* 🎁 recently redeemed rewards */
+.habitica-chores .hc-redeemed .hc-user-name { color: #ffb3c1; }
+.habitica-chores .hc-redeem-who { color: var(--color-text-bright, #fff); font-weight: bold; }
+.habitica-chores .hc-redeem-cost { color: #ffd700; }

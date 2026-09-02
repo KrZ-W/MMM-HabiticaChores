@@ -115,6 +115,18 @@ module.exports = NodeHelper.create({
       results.push(entry);
     }
 
+    // Recently redeemed rewards, reported by an external collector
+    // (e.g. habitica-kids' /_hk/redemptions webhook log).
+    let redemptions = null;
+    if (options.redemptionsUrl) {
+      try {
+        const r = await fetch(options.redemptionsUrl);
+        if (r.ok) redemptions = ((await r.json()) || {}).redemptions || [];
+      } catch (err) {
+        console.error(`[${this.name}] redemptions fetch failed: ${err.message}`);
+      }
+    }
+
     let house = null;
     if (options.group && options.group.id && options.group.apiToken) {
       try {
@@ -124,7 +136,7 @@ module.exports = NodeHelper.create({
         house = { name: options.group.name || "Maison", error: err.message, chores: [] };
       }
     }
-    this.sendSocketNotification("HABITICA_TASKS", { identifier, users: results, house });
+    this.sendSocketNotification("HABITICA_TASKS", { identifier, users: results, house, redemptions });
   },
 
   // Fetch a group's shared chores + who's assigned + who's done (group tasks

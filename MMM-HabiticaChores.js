@@ -8,7 +8,12 @@ Module.register("MMM-HabiticaChores", {
     users: [],                    // [{ name, userId, apiToken }]
     apiBase: "",                  // override API base for a self-hosted instance (e.g. "http://host:3000/api/v3"); blank = habitica.com
     group: null,                  // { name, id, userId, apiToken } → render a group's shared chores as a 🏠 section
-    mode: "list",                 // "list" = detailed chores; "summary" = compact avatar + count strip; "stats" = stat cards
+    redemptionsUrl: "",           // URL returning {redemptions:[{name,icon,label,cost,at}]} → show recently redeemed rewards
+    redemptionsHours: 24,         // how far back to show them
+    redemptionsInline: false,     // list mode: append them inside the chores panel instead of using a separate instance
+    hideWhenEmpty: true,          // redemptions mode: render nothing when there is nothing to show
+    noRedemptionsText: "Aucune récompense échangée",
+    mode: "list",                 // "list" | "summary" | "stats" | "redemptions" (rewards cashed in)
     columns: 1,                   // list mode: >1 lays out person cards in a grid instead of one stack
     showDifficulty: false,        // list mode: show per-task difficulty pips (reward level)
     demo: false,                  // true = render canned sample chores (no account needed)
@@ -51,6 +56,7 @@ Module.register("MMM-HabiticaChores", {
         cacheSeconds: this.config.cacheSeconds,
         reqGapMs: this.config.reqGapMs,
         group: this.config.group,
+        redemptionsUrl: this.config.redemptionsUrl,
         showStats: this.config.showStats,
         onlyDueToday: this.config.onlyDueToday,
         hideCompleted: this.config.hideCompleted
@@ -68,6 +74,7 @@ Module.register("MMM-HabiticaChores", {
     if (notification !== "HABITICA_TASKS" || payload.identifier !== this.identifier) return;
     this.usersData = payload.users;
     this.houseData = payload.house || null;
+    this.redemptions = payload.redemptions || null;
     this.loaded = true;
     this.updateDom(this.config.fade ? 500 : 0);
   },
@@ -236,6 +243,66 @@ Module.register("MMM-HabiticaChores", {
     return block;
   },
 
+  // Standalone 🎁 block (mode: "redemptions") — its own panel.
+  buildRedemptionsPanel() {
+    const wrapper = document.createElement("div");
+    wrapper.className = "habitica-chores" + (this.config.panel ? " hc-panel" : "");
+    if (!this.loaded) {
+      wrapper.className += " dimmed small";
+      wrapper.textContent = "…";
+      return wrapper;
+    }
+    const block = this.buildRedemptions();
+    if (!block) {
+      if (!this.config.hideWhenEmpty) {
+        const empty = document.createElement("div");
+        empty.className = "hc-empty small dimmed";
+        empty.textContent = this.config.noRedemptionsText;
+        wrapper.appendChild(empty);
+        return wrapper;
+      }
+      return document.createElement("div"); // render nothing
+    }
+    block.style.marginBottom = "0";
+    wrapper.appendChild(block);
+    return wrapper;
+  },
+
+  // 🎁 rewards redeemed recently (so a parent sees what was cashed in)
+  buildRedemptions() {
+    const all = this.redemptions;
+    if (!all || !all.length) return null;
+    const cut = Date.now() - (this.config.redemptionsHours || 24) * 3600e3;
+    const list = all.filter((r) => Date.parse(r.at) >= cut);
+    if (!list.length) return null;
+
+    const block = document.createElement("div");
+    block.className = "hc-user hc-redeemed";
+    const h = document.createElement("div");
+    h.className = "hc-user-name";
+    h.textContent = "🎁 Récompenses échangées";
+    block.appendChild(h);
+    const ul = document.createElement("ul");
+    ul.className = "hc-list";
+    list.slice(0, 6).forEach((r) => {
+      const li = document.createElement("li");
+      li.className = "hc-item";
+      const who = document.createElement("span");
+      who.className = "hc-redeem-who";
+      who.textContent = r.name;
+      const what = document.createElement("span");
+      what.className = "hc-text";
+      what.textContent = ` ${r.icon ? r.icon + " " : ""}${r.label}`;
+      const cost = document.createElement("span");
+      cost.className = "hc-redeem-cost xsmall";
+      cost.textContent = ` −${r.cost} 🪙`;
+      li.appendChild(who); li.appendChild(what); li.appendChild(cost);
+      ul.appendChild(li);
+    });
+    block.appendChild(ul);
+    return block;
+  },
+
   buildBar(icon, cur, max, kind) {
     const row = document.createElement("div");
     row.className = "hstat-bar-row";
@@ -329,6 +396,7 @@ Module.register("MMM-HabiticaChores", {
   getDom() {
     if (this.config.mode === "summary") return this.buildSummary();
     if (this.config.mode === "stats") return this.buildStats();
+    if (this.config.mode === "redemptions") return this.buildRedemptionsPanel();
 
     const wrapper = document.createElement("div");
     wrapper.className = "habitica-chores" + (this.config.panel ? " hc-panel" : "") +
@@ -438,6 +506,10 @@ Module.register("MMM-HabiticaChores", {
 
     if (this.houseData && ((this.houseData.chores && this.houseData.chores.length) || this.houseData.error)) {
       wrapper.appendChild(this.buildHouse());
+    }
+    if (this.config.redemptionsInline) {
+      const red = this.buildRedemptions();
+      if (red) wrapper.appendChild(red);
     }
     return wrapper;
   }
