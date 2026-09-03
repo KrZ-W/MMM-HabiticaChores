@@ -10,6 +10,7 @@ Module.register("MMM-HabiticaChores", {
     group: null,                  // { name, id, userId, apiToken } → render a group's shared chores as a 🏠 section
     redemptionsUrl: "",           // URL returning {redemptions:[{name,icon,label,cost,at}]} → show recently redeemed rewards
     redemptionsHours: 24,         // how far back to show them (0 = no limit; use with a pending-only URL)
+    panelWidth: "",               // e.g. "960px" — force a panel to match your other panels' width
     redemptionsInline: false,     // list mode: append them inside the chores panel instead of using a separate instance
     hideWhenEmpty: true,          // redemptions mode: render nothing when there is nothing to show
     noRedemptionsText: "Aucune récompense échangée",
@@ -246,7 +247,8 @@ Module.register("MMM-HabiticaChores", {
   // Standalone 🎁 block (mode: "redemptions") — its own panel.
   buildRedemptionsPanel() {
     const wrapper = document.createElement("div");
-    wrapper.className = "habitica-chores" + (this.config.panel ? " hc-panel" : "");
+    wrapper.className = "habitica-chores hc-redeem-panel" + (this.config.panel ? " hc-panel" : "");
+    if (this.config.panelWidth) wrapper.style.width = this.config.panelWidth;
     if (!this.loaded) {
       wrapper.className += " dimmed small";
       wrapper.textContent = "…";

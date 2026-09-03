@@ -260,3 +260,6 @@
 .habitica-chores .hc-redeemed .hc-user-name { color: #ffb3c1; }
 .habitica-chores .hc-redeem-who { color: var(--color-text-bright, #fff); font-weight: bold; }
 .habitica-chores .hc-redeem-cost { color: #ffd700; }
+
+/* when a width is forced, include padding in it so panels line up exactly */
+.habitica-chores.hc-redeem-panel { box-sizing: border-box; max-width: 100%; }

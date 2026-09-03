@@ -80,6 +80,7 @@ out of any public place (including GitHub); it belongs only in your local
 | `users` | array | `[]` | `{ name, userId, apiToken }` per person. |
 | `apiBase` | string | `""` | Point at a **self-hosted** Habitica (e.g. `"http://host:3000/api/v3"`). Blank = `habitica.com`. |
 | `redemptionsUrl` | string | `""` | URL returning `{redemptions:[{name,icon,label,cost,at}]}` — e.g. [habitica-kids](https://github.com/KrZ-W/habitica-kids)' `/_hk/redemptions`, which logs reward purchases via a Habitica webhook. |
+| `panelWidth` | string | `""` | Force a panel width (e.g. `"960px"`) so this instance lines up with your other panels. |
 | `redemptionsHours` | int | `24` | How far back the redemptions view looks. `0` = no limit (pair with a pending-only URL so entries stay until handled). |
 | `group` | object | `null` | `{ name, id, userId, apiToken }` → render a party's **group/shared chores** as a 🏠 section (open chore, marked done ✓ by whoever completes it). Needs a Group Plan (free when self-hosted). |
 | `mode` | string | `"list"` | `"list"` (detailed chores), `"summary"` (avatar + completion strip), `"stats"` (per-player stat cards), or `"redemptions"` (rewards recently cashed in). |
